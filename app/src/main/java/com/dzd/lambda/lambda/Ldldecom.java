@@ -1,15 +1,15 @@
 package com.dzd.lambda.lambda;
-import Jama.*;
+import Jama.Matrix;
 
+//LtDL decomposition
 public class Ldldecom {
-	private Matrix matrix;
-	private Matrix L;
-	private Matrix D;
+	private Matrix matrix = null;
+	private Matrix L = null;
+	private Matrix D = null;
 
 	public Ldldecom(Matrix matrix) {
+//		if (matrix == null) return;
 		this.matrix = matrix.copy();
-		this.L = null;
-		this.D = null;
 		LDLT();
 		if (!isPositiveDefinite()){
 			this.L = null;
@@ -33,7 +33,7 @@ public class Ldldecom {
 		}
 	}
 
-	public boolean isPositiveDefinite(){
+	private boolean isPositiveDefinite(){
 		if (D == null) return false;
 		for(int i = 0;i < D.getColumnDimension();i++){
 			if(D.get(i,i) < 1E-10 || Double.isNaN(D.get(i,i))) return false;

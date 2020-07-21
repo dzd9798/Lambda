@@ -27,4 +27,5 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
     implementation files('libs/Jama-1.0.3.jar')
+    implementation files('libs/commons-math3-3.6.1.jar')
 }
