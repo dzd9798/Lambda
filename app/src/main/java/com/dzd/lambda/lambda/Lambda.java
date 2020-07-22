@@ -1,11 +1,28 @@
 package com.dzd.lambda.lambda;
 
+import android.content.Context;
 import android.util.Log;
+
+import com.dzd.lambda.R;
+
+import org.apache.commons.math3.analysis.UnivariateFunction;
+import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
+import org.apache.commons.math3.analysis.interpolation.UnivariateInterpolator;
 import org.apache.commons.math3.distribution.NormalDistribution;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.Locale;
+
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
 
 public class Lambda {
+    private Context context = null;
     private Matrix ahat = null;
     private Matrix Qahat = null;
     private int method;
@@ -23,7 +40,8 @@ public class Lambda {
 
     public static final int ILS_SSEARCH = 1,ILS_ISEARCH = 2,IR = 3,IB = 4,PAR = 5,ILS_SSEARCH_RT = 6;
 
-    public Lambda(Matrix ahat, Matrix Qahat,int method,Object...objects){
+    public Lambda(Context context,Matrix ahat, Matrix Qahat,int method,Object...objects){
+        this.context = context;
         this.ahat = ahat.copy();
         this.Qahat = Qahat.copy();
         this.method = method;
@@ -194,13 +212,24 @@ public class Lambda {
 
                 break;
             case IR:
-
+                zfixed = new Matrix(n,1);
+                for (int i = 0;i < n;i++){
+                    zfixed.set(i,0,Math.round(zhat.get(i,0)));
+                }
                 break;
             case IB:
-
+                Bootstrap bootstrap = new Bootstrap(zhat,L);
+                zfixed = bootstrap.getafixed();
                 break;
             case PAR:
-
+                Parsearch parsearch = new Parsearch(zhat,Qzhat,Z,L,D,P0,ncands);
+                Matrix zpar = parsearch.getzpar();
+                sqnorm = parsearch.getSqnorm();
+                Qzhat = parsearch.getQzpar(); //此处变量是否为Qzpar更好?
+                Z = parsearch.getZpar();
+                Ps = parsearch.getPs();
+                nfixed = parsearch.getNfixed();
+                zfixed = parsearch.getzfixed();
                 break;
             case ILS_SSEARCH_RT:
                 ssearch = new Ssearch(zhat,L,D,ncands);
@@ -208,7 +237,7 @@ public class Lambda {
                 sqnorm = ssearch.getSqnorm();
                 if(FFRT){
                     if(1 - Ps > P0){
-                        // TODO
+                        mu = ratioinv(this.context,P0,1-Ps,n);
                     }else{
                         mu = 1;
                     }
@@ -254,6 +283,57 @@ public class Lambda {
             if(eigValue < 0) return false;
         }
         return true;
+    }
+
+    // Determine appropriate threshold value MU for Ratio Test with Fixed
+    // Failure rate Pf.
+    // Use tabulated values of MU depending on the ILS failure rate and
+    // the number of float ambiguities
+    static public double ratioinv(Context context, double Pf_FIX, double PfILS, int n){
+        int kPf = (int) Math.round(Pf_FIX*1000);
+        if(kPf != 1 && kPf != 10) return Double.NaN;
+        if(n < 1) return Double.NaN;
+        double[] PfList = null;
+        double[] muList = null;
+        double[][] table_double = null;
+        try {
+            InputStream ratioTableInputStream = context.getResources().openRawResource(R.raw.ratiotab);
+            String ratioTableStr = readTextInputStream(ratioTableInputStream);
+
+            JSONObject jsonObject = new JSONObject(ratioTableStr);
+            JSONArray jsonArray = jsonObject.getJSONArray(String.format(Locale.CHINESE,"table%d",kPf));
+
+            if(n > jsonArray.getJSONArray(0).length() - 1){
+                n = jsonArray.getJSONArray(0).length() - 1;
+            }
+
+            PfList = new double[jsonArray.length()];
+            muList = new double[jsonArray.length()];
+            for(int i = 0;i < jsonArray.length();i++){
+                PfList[i] = jsonArray.getJSONArray(i).getDouble(0);
+                muList[i] = jsonArray.getJSONArray(i).getDouble(n);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+            return Double.NaN;
+        }
+
+        UnivariateInterpolator interpolator = new LinearInterpolator();
+        UnivariateFunction function = interpolator.interpolate(PfList, muList);
+
+        return function.value(PfILS);
+    }
+
+    static private String readTextInputStream(InputStream is) throws Exception {
+        InputStreamReader reader = new InputStreamReader(is);
+        BufferedReader bufferedReader = new BufferedReader(reader);
+        StringBuffer buffer = new StringBuffer("");
+        String str;
+        while ((str = bufferedReader.readLine()) != null) {
+            buffer.append(str);
+            buffer.append("\n");
+        }
+        return buffer.toString();
     }
 
 }
