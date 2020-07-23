@@ -5,12 +5,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.dzd.lambda.lambda.Decorrel;
 import com.dzd.lambda.lambda.Lambda;
-import com.dzd.lambda.lambda.Ldldecom;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
@@ -78,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
 //        }
 
 
-        Lambda lambda = new Lambda(MainActivity.this,ahat,Qahat,Lambda.PAR);
+        Lambda lambda = new Lambda(MainActivity.this,ahat,Qahat,Lambda.ILS_ISEARCH);
         stringWriter = new StringWriter();
         printWriter = new PrintWriter(stringWriter);
         lambda.getafixed().print(printWriter, 3, 4);

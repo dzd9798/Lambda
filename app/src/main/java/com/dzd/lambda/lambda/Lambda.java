@@ -15,7 +15,6 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.Locale;
 
 import Jama.EigenvalueDecomposition;
@@ -209,7 +208,9 @@ public class Lambda {
                 sqnorm = ssearch.getSqnorm();
                 break;
             case ILS_ISEARCH:
-
+                Isearch isearch = new Isearch(zhat,L,D,ncands);
+                zfixed = isearch.getafixed();
+                sqnorm = isearch.getSqnorm();
                 break;
             case IR:
                 zfixed = new Matrix(n,1);
